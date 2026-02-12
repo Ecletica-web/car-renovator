@@ -1,0 +1,32 @@
+From: alerts@olx.pt
+To: user@example.com
+Date: Mon, 15 Jan 2024 10:30:00 +0000
+Subject: Novos anúncios encontrados
+
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain
+
+Novos anúncios encontrados:
+
+Para-choques Dianteiro Original
+https://www.olx.pt/item/123456789
+Preço: €150,00
+Localização: Lisboa
+
+--boundary123
+Content-Type: text/html
+
+<!DOCTYPE html>
+<html>
+<body>
+  <div class="listing-item">
+    <h3><a href="https://www.olx.pt/item/123456789?hash=abc123">Para-choques Dianteiro Original</a></h3>
+    <p>Preço: €150,00</p>
+    <p>Localização: Lisboa</p>
+  </div>
+</body>
+</html>
+
+--boundary123--

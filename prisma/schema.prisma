@@ -1,0 +1,281 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  projects CarProject[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model CarProject {
+  id        String   @id @default(cuid())
+  userId    String
+  make      String
+  model     String
+  year      Int
+  trim      String?
+  city      String?
+  region    String?
+  mileage   Int?
+  vin       String?
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  diagnosisCompleted Boolean @default(false)
+  diagnosisCompletedAt DateTime?
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parts     Part[]
+  outreaches Outreach[]
+  problems  Problem[]
+  photos    Photo[]
+  documents Document[]
+  replacements Replacement[]
+  diagnosis Diagnosis?
+}
+
+model Part {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  keywords    String   // JSON array stored as string
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  alerts      Alert[]
+  listings    Listing[]
+  outreaches  Outreach[]
+}
+
+model Alert {
+  id            String   @id @default(cuid())
+  partId        String
+  keywords      String   // JSON array stored as string
+  priceRangeMin Float?
+  priceRangeMax Float?
+  locationRadius Int?    // in km
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  part    Part      @relation(fields: [partId], references: [id], onDelete: Cascade)
+  listings Listing[]
+}
+
+model Listing {
+  id        String   @id @default(cuid())
+  partId    String?
+  alertId   String?
+  source    String   @default("olx_email")
+  title     String
+  url       String   @unique
+  price     Float?
+  location  String?
+  postedAt  DateTime?
+  ingestedAt DateTime @default(now())
+  isNew     Boolean  @default(true)
+  status    String   @default("new") // "new" | "viewed" | "contacted" | "purchased" | "expired"
+
+  part  Part?   @relation(fields: [partId], references: [id], onDelete: SetNull)
+  alert Alert?  @relation(fields: [alertId], references: [id], onDelete: SetNull)
+}
+
+model Scrapyard {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  city      String?
+  region    String?
+  notes     String?
+  tags      String?  // JSON array stored as string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outreaches Outreach[]
+}
+
+model Outreach {
+  id             String    @id @default(cuid())
+  projectId      String
+  partId         String
+  scrapyardId    String
+  channel        String    @default("email") // "email" | "whatsapp"
+  messageDraft   String
+  status         String    @default("not_contacted") // "not_contacted" | "contacted" | "awaiting_reply" | "found_lead" | "closed"
+  lastContactedAt DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project   CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  part      Part       @relation(fields: [partId], references: [id], onDelete: Cascade)
+  scrapyard Scrapyard  @relation(fields: [scrapyardId], references: [id], onDelete: Cascade)
+}
+
+model EmailIngestion {
+  id            String   @id @default(cuid())
+  messageIdHash String   @unique
+  source        String
+  ingestedAt    DateTime @default(now())
+  listingCount  Int      @default(0)
+}
+
+model Problem {
+  id          String   @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  category    String   // "engine" | "electrical" | "body" | "interior" | "suspension" | "brakes" | "transmission" | "other"
+  severity    String   @default("medium") // "low" | "medium" | "high" | "critical"
+  reportedBy  String   @default("user") // "user" | "ai" | "knowledge_base"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  diagnosisItems DiagnosisItem[]
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  projectId   String
+  url         String
+  filename    String
+  description String?
+  aiAnalysis  String?  // JSON string with AI analysis results
+  uploadedAt  DateTime @default(now())
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  projectId   String
+  url         String
+  filename    String
+  type        String   // "service_record" | "repair_invoice" | "manual" | "other"
+  extractedText String? // Extracted text from document
+  uploadedAt  DateTime @default(now())
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Replacement {
+  id          String   @id @default(cuid())
+  projectId   String
+  partName    String
+  description String?
+  date        DateTime?
+  cost        Float?
+  workshop    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Diagnosis {
+  id          String   @id @default(cuid())
+  projectId   String   @unique
+  summary     String?
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     CarProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items       DiagnosisItem[]
+}
+
+model DiagnosisItem {
+  id          String   @id @default(cuid())
+  diagnosisId String
+  problemId   String?
+  title       String
+  description String
+  category    String   // Specialist category
+  severity    String
+  priority    Int      @default(0) // Lower number = higher priority
+  estimatedCost Float?
+  estimatedTime String?
+  parentId    String?  // For tree structure
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  diagnosis   Diagnosis @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  problem     Problem?  @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  parent      DiagnosisItem? @relation("DiagnosisItemTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    DiagnosisItem[] @relation("DiagnosisItemTree")
+  specialistContacts SpecialistContact[]
+}
+
+model SpecialistContact {
+  id              String   @id @default(cuid())
+  diagnosisItemId String
+  name            String
+  type            String   // "mechanic" | "electrician" | "body_shop" | "interior" | "paint" | "other"
+  phone           String?
+  email           String?
+  address         String?
+  city            String?
+  rating          Float?
+  notes           String?
+  isPlaceholder   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  diagnosisItem   DiagnosisItem @relation(fields: [diagnosisItemId], references: [id], onDelete: Cascade)
+}
