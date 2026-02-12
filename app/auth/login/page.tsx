@@ -50,17 +50,23 @@ export default function LoginPage() {
       // Generate a random guest email
       const guestEmail = `guest-${Date.now()}-${Math.random().toString(36).substring(7)}@guest.local`;
       
-      // Sign in with credentials (works in dev mode)
+      console.log("Attempting guest sign-in with:", guestEmail);
+      
+      // Sign in with credentials (now always available)
       const result = await signIn("credentials", {
         email: guestEmail,
         redirect: false,
+        callbackUrl: "/",
       });
 
+      console.log("Sign-in result:", result);
+
       if (result?.ok) {
-        router.push("/");
-        router.refresh();
+        console.log("Sign-in successful, redirecting...");
+        window.location.href = "/";
       } else {
-        // If credentials don't work, try the guest API endpoint
+        console.error("Sign-in failed:", result?.error);
+        // Try creating user first via API, then sign in
         const response = await fetch("/api/auth/guest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -68,16 +74,24 @@ export default function LoginPage() {
         });
         
         if (response.ok) {
-          // After creating guest user, sign in
+          console.log("Guest user created, attempting sign-in again...");
+          // Try signing in again after user is created
           const signInResult = await signIn("credentials", {
             email: guestEmail,
             redirect: false,
+            callbackUrl: "/",
           });
           
           if (signInResult?.ok) {
-            router.push("/");
-            router.refresh();
+            window.location.href = "/";
+          } else {
+            console.error("Second sign-in attempt failed:", signInResult?.error);
+            alert("Failed to sign in. Please try again.");
           }
+        } else {
+          const errorData = await response.json();
+          console.error("Failed to create guest user:", errorData);
+          alert("Failed to create guest account. Please try again.");
         }
       }
     } catch (error) {
