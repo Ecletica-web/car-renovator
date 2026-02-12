@@ -3,6 +3,22 @@ import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
+    // Diagnostic: Check DATABASE_URL
+    const dbUrl = process.env.DATABASE_URL || "NOT SET";
+    const isSqlite = dbUrl.startsWith("file:");
+    
+    if (isSqlite) {
+      return NextResponse.json(
+        {
+          error: "DATABASE_URL is set to SQLite",
+          details: "DATABASE_URL starts with 'file:' which is SQLite. This won't work on Vercel.",
+          hint: "Go to Vercel Settings → Environment Variables and update DATABASE_URL to your PostgreSQL connection string.",
+          currentValue: dbUrl.substring(0, 50) + "...",
+        },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const guestEmail = body.email || `guest-${Date.now()}-${Math.random().toString(36).substring(7)}@guest.local`;
 
