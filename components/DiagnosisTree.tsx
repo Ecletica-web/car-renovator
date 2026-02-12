@@ -27,7 +27,7 @@ interface DiagnosisItem {
   priority: number;
   estimatedCost?: number | null;
   estimatedTime?: string | null;
-  children: DiagnosisItem[];
+  children?: DiagnosisItem[];
   specialistContacts: SpecialistContact[];
 }
 
@@ -66,7 +66,7 @@ export default function DiagnosisTree({ items }: DiagnosisTreeProps) {
   const renderItem = (item: DiagnosisItem, level: number = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expanded.has(item.id);
-    const isParent = hasChildren && item.children.length > 0;
+    const isParent = hasChildren && (item.children?.length ?? 0) > 0;
 
     return (
       <div key={item.id} className={level > 0 ? "ml-6 mt-2" : ""}>
@@ -109,7 +109,7 @@ export default function DiagnosisTree({ items }: DiagnosisTreeProps) {
             </div>
           </CardHeader>
 
-          {isExpanded && hasChildren && (
+          {isExpanded && hasChildren && item.children && (
             <CardContent className="pt-0">
               <div className="space-y-2">
                 {item.children.map((child) => renderItem(child, level + 1))}
@@ -192,7 +192,7 @@ export default function DiagnosisTree({ items }: DiagnosisTreeProps) {
   const parentItems = items.filter((item) => {
     // Check if this item is a child of any other item
     const isChild = items.some((other) => 
-      other.children?.some((child) => child.id === item.id)
+      other.children?.some((child) => child.id === item.id) ?? false
     );
     return !isChild;
   });
