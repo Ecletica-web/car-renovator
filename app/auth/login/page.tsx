@@ -48,7 +48,9 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       // Generate a random guest email
-      const guestEmail = `guest-${Date.now()}@guest.local`;
+      const guestEmail = `guest-${Date.now()}-${Math.random().toString(36).substring(7)}@guest.local`;
+      
+      // Sign in with credentials (works in dev mode)
       const result = await signIn("credentials", {
         email: guestEmail,
         redirect: false,
@@ -58,17 +60,29 @@ export default function LoginPage() {
         router.push("/");
         router.refresh();
       } else {
-        // If that fails, try creating guest user via API
+        // If credentials don't work, try the guest API endpoint
         const response = await fetch("/api/auth/guest", {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: guestEmail }),
         });
+        
         if (response.ok) {
-          router.push("/");
-          router.refresh();
+          // After creating guest user, sign in
+          const signInResult = await signIn("credentials", {
+            email: guestEmail,
+            redirect: false,
+          });
+          
+          if (signInResult?.ok) {
+            router.push("/");
+            router.refresh();
+          }
         }
       }
     } catch (error) {
       console.error("Guest sign-in error:", error);
+      alert("Failed to sign in as guest. Please try again.");
     } finally {
       setIsLoading(false);
     }

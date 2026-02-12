@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { signIn } from "next-auth/react";
 
 export async function POST(request: NextRequest) {
   try {
-    // Generate a unique guest email
-    const guestEmail = `guest-${Date.now()}-${Math.random().toString(36).substring(7)}@guest.local`;
+    const body = await request.json();
+    const guestEmail = body.email || `guest-${Date.now()}-${Math.random().toString(36).substring(7)}@guest.local`;
 
     // Find or create guest user
     let user = await db.user.findUnique({
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       email: guestEmail,
-      message: "Guest user created. Please sign in with credentials.",
+      userId: user.id,
     });
   } catch (error) {
     console.error("Error creating guest user:", error);
