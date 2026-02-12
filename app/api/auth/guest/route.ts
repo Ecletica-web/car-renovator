@@ -12,12 +12,31 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      user = await db.user.create({
-        data: {
-          email: guestEmail,
-          name: "Guest User",
-        },
-      });
+      try {
+        user = await db.user.create({
+          data: {
+            email: guestEmail,
+            name: "Guest User",
+          },
+        });
+      } catch (createError: any) {
+        console.error("Error creating guest user:", createError);
+        // If creation fails, try to find again (might have been created by another request)
+        user = await db.user.findUnique({
+          where: { email: guestEmail },
+        });
+        
+        if (!user) {
+          return NextResponse.json(
+            { 
+              error: "Failed to create guest user",
+              details: createError.message || "Database error. Please ensure PostgreSQL is configured.",
+              hint: "SQLite doesn't work on Vercel. You need PostgreSQL."
+            },
+            { status: 500 }
+          );
+        }
+      }
     }
 
     // Return success - the client will handle the sign-in
@@ -26,10 +45,14 @@ export async function POST(request: NextRequest) {
       email: guestEmail,
       userId: user.id,
     });
-  } catch (error) {
-    console.error("Error creating guest user:", error);
+  } catch (error: any) {
+    console.error("Error in guest endpoint:", error);
     return NextResponse.json(
-      { error: "Failed to create guest user" },
+      { 
+        error: "Failed to create guest user",
+        details: error.message || "Unknown error",
+        hint: "Database connection issue. SQLite doesn't work on Vercel - you need PostgreSQL."
+      },
       { status: 500 }
     );
   }

@@ -89,9 +89,10 @@ export default function LoginPage() {
             alert("Failed to sign in. Please try again.");
           }
         } else {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({}));
           console.error("Failed to create guest user:", errorData);
-          alert("Failed to create guest account. Please try again.");
+          const errorMsg = errorData.hint || errorData.details || errorData.error || "Failed to create guest account. Please try again.";
+          alert(errorMsg);
         }
       }
     } catch (error) {
