@@ -20,16 +20,17 @@ export const authOptions: NextAuthOptions = {
               return null;
             }
 
-            // Find or create dev user
+            // Find or create user (works for both dev and guest users)
             let user = await db.user.findUnique({
               where: { email: credentials.email },
             });
 
             if (!user) {
+              const isGuest = credentials.email.includes("@guest.local");
               user = await db.user.create({
                 data: {
                   email: credentials.email,
-                  name: "Dev User",
+                  name: isGuest ? "Guest User" : "Dev User",
                 },
               });
             }
