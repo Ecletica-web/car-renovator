@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "db:setup": "ts-node scripts/setup-db.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "verify": "ts-node scripts/verify.ts"
