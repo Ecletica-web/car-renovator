@@ -27,11 +27,15 @@ export async function POST(request: NextRequest) {
         });
         
         if (!user) {
+          const dbUrl = process.env.DATABASE_URL || "not set";
+          const isSqlite = dbUrl.startsWith("file:");
           return NextResponse.json(
             { 
               error: "Failed to create guest user",
-              details: createError.message || "Database error. Please ensure PostgreSQL is configured.",
-              hint: "SQLite doesn't work on Vercel. You need PostgreSQL."
+              details: createError.message || "Database error.",
+              hint: isSqlite 
+                ? "DATABASE_URL is set to SQLite. Update it to PostgreSQL in Vercel Settings → Environment Variables."
+                : `Database connection failed. Check DATABASE_URL. Current: ${dbUrl.substring(0, 20)}...`
             },
             { status: 500 }
           );

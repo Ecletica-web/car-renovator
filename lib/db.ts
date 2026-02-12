@@ -4,6 +4,13 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// Check DATABASE_URL to ensure it's PostgreSQL
+const databaseUrl = process.env.DATABASE_URL || "";
+if (databaseUrl && databaseUrl.startsWith("file:")) {
+  console.error("ERROR: DATABASE_URL is set to SQLite (file:). This won't work on Vercel!");
+  console.error("Please set DATABASE_URL to a PostgreSQL connection string in Vercel environment variables.");
+}
+
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
@@ -11,11 +18,3 @@ export const db =
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
-
-// Test database connection on startup
-if (typeof window === "undefined") {
-  db.$connect().catch((error) => {
-    console.error("Database connection error:", error);
-    console.error("Note: SQLite doesn't work on Vercel. You need PostgreSQL.");
-  });
-}
